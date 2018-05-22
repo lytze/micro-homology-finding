@@ -5,13 +5,13 @@ max_inter <- 100
 min_micro <- 5
 gc_con <- 0.4
 
-len <- as.data.frame(list(id = character(), len = integer(), count = integer()), stringsAsFactors = F)
+len <- data.frame(list(id = character(), len = integer(), count = integer()), stringsAsFactors = F)
 n <- 0
 repeat {
     ch <- readChar(con, 1)
     if (length(ch) == 0) {
         ## output
-        len <- rbind(len, list(gid, b, nrow(stack)))
+        len[n, ] <- list(gid, b, nrow(stack))
         if (nrow(stack) != 0) {
             sel <- nchar(gsub("[AT]", "", stack$Sequence)) / nchar(stack$Sequence) >= gc_con
             if (any(sel)) write.csv(stack[sel, ], paste0(res_d, gid, ".csv"), row.names = F)
@@ -22,7 +22,7 @@ repeat {
         if (ch == ">") {
             if (n > 0) {
                 ## output
-                len <- rbind(len, list(gid, b, nrow(stack)))
+                len[n, ] <- list(gid, b, nrow(stack))
                 if (nrow(stack) != 0) {
                     sel <- nchar(gsub("[AT]", "", stack$Sequence)) / nchar(stack$Sequence) >= gc_con
                     if (any(sel)) write.csv(stack[sel, ], paste0(res_d, gid, ".csv"), row.names = F)
