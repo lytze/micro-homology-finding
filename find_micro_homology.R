@@ -1,5 +1,5 @@
-con <- file("../data/cdsintrons.fa", "r")
-res_d <- "../results/genes_5/"
+con <- file("../data/artif.fa", "r")
+res_d <- "../results/artif/"
 min_inter <- 10
 max_inter <- 100
 min_micro <- 5
@@ -85,4 +85,4 @@ repeat {
     }
 }
 close(con)
-write.csv(len, paste0(res_d, "stat.csv"))
+write.csv(len, paste0(res_d, "stat.csv"), row.names = F)
