@@ -4,7 +4,7 @@ n_cores <- detectCores()
 WI <- 50
 
 res <- file("../results/mapped_miho_5.wig", "w")
-res_d <- "../results/genes/"
+res_d <- "../results/genes_5/"
 cat("track type=wiggle_0 name=micro-homology-occurence-over-5\n", file = res)
 
 N <- c("I", "II", "III")

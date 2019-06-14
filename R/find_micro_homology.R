@@ -1,5 +1,5 @@
-con <- file("../data/artif.fa", "r")
-res_d <- "../results/artif/"
+con <- file("data/cdsintrons.fa", "rt")
+res_d <- "results/"
 min_inter <- 10
 max_inter <- 100
 min_micro <- 5
@@ -14,7 +14,11 @@ repeat {
         len[n, ] <- list(gid, b, nrow(stack))
         if (nrow(stack) != 0) {
             sel <- nchar(gsub("[AT]", "", stack$Sequence)) / nchar(stack$Sequence) >= gc_con
-            if (any(sel)) write.csv(stack[sel, ], paste0(res_d, gid, ".csv"), row.names = F)
+            if (any(sel)) {
+                res <- stack[sel, ]
+                res$LenInt <- res[, 3] - res[, 2] - nchar(res[, 1])
+                write.csv(res, paste0(res_d, gid, ".csv"), row.names = F)
+            }
         }
         break
     }
@@ -30,7 +34,12 @@ repeat {
             }
             ## for each sequence
             n <- n + 1
-            gid <- readLines(con, 1)
+            newchar <- ""
+            gid <- ""
+            while (newchar != "\n") {
+                gid <- paste0(gid, newchar)
+                newchar <- readChar(con, 1)
+            }
             message("#", n, " ", gid)
             ## initialize
             dict <- new.env()

@@ -2,15 +2,14 @@ require(seqinr)
 require(parallel)
 n_cores <- detectCores()
 
-fa <- read.fasta("../data/artif.fa")
-res_d <- "../results/artif/"
+fa <- read.fasta("data/artif.fa")
+res_d <- "results/artif/"
 min_inter <- 10
 max_inter <- 100
 min_micro <- 5
-gc_con <- 0.4
 
 cl <- makeCluster(n_cores)
-clusterExport(cl, c("len", "res_d", "min_inter", "max_inter", "min_micro", "gc_con"))
+clusterExport(cl, c("res_d", "min_inter", "max_inter", "min_micro"))
 len <- parSapplyLB(cl, fa, function(seq) {
     gid <- attr(seq, "name")
     ## initialize
@@ -65,8 +64,7 @@ len <- parSapplyLB(cl, fa, function(seq) {
     }
     ## output
     if (nrow(stack) != 0) {
-        sel <- nchar(gsub("[at]", "", stack$Sequence)) / nchar(stack$Sequence) >= gc_con
-        if (any(sel)) write.csv(stack[sel, ], paste0(res_d, gid, ".csv"), row.names = F)
+        write.csv(stack, paste0(res_d, gid, ".csv"), row.names = F)
     }
     return(c(gid, b, nrow(stack)))
 })
