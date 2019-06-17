@@ -284,7 +284,8 @@ int main(int argc, char *argv[]) {
                         }
                         for ( e = j ; fsuff[e-j] ; e++ ) {
                             fnout[e] = fsuff[e-j];
-                        }                           // 生成输出文件的文件名
+                        }
+                        fnout[e] = '\0';            // 生成输出文件的文件名
                         fout = fopen(fnout, "w");
                         pos = 1-SK;                 // 初始化 pos 为 1-SK
                                                     // 这样当读完第一个 kmer 时 pos 为 1
