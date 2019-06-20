@@ -3,10 +3,14 @@
 #include <math.h>
 
 //// 开始定义常数
-#define SK 4
-#define HSize 256 // 0000(4) ~ 3333(4)
+#define SK       4
+#define HSize    256 // 0000(4) ~ 3333(4)
 #define MAXINTVL 100 // 最大区间 100 bps
-#define MININTVL 3 // 最小区间 3 + SK bps
+#define MININTVL 3   // 最小区间 3 + SK bps
+#define AAAA     0
+#define CCCC     85
+#define GGGG     170
+#define TTTT     255 // 单碱基重复序列的哈希值
 //// 结束定义常数
 
 
@@ -55,17 +59,18 @@ int hash_Kmer(Kmer k) {
 //// 先定义 pairs 记录的行，这个行有两个值和一个指向下一个记录的指针
 typedef struct pairstab_record* PairsTab_record;
 struct pairstab_record {
-    long pos; // 第二个 MH 的左端位置
-              // 第二个是为了方便之后 prior 推算更长长度 MH pair 的情况需要按顺序排列
-    int len;  // MH 的长度
-    int ind;  // INDEL 的事件长度 即两个MH左端碱基之间的距离
+    long pos;    // 第二个 MH 的左端位置
+                 // 第二个是为了方便之后 prior 推算更长长度 MH pair 的情况需要按顺序排列
+    int len;     // MH 的长度
+    int ind;     // INDEL 的事件长度 即两个MH左端碱基之间的距离
+    int is_mono; // 是否为单核苷酸重复
     PairsTab_record next;
 };
 //// 用来新建 PairsTab 记录
-PairsTab_record new_PairsTab_record(long p, int l, int i) {
+PairsTab_record new_PairsTab_record(long p, int l, int i, int m) {
     PairsTab_record res;
     res = (PairsTab_record)malloc(sizeof(struct pairstab_record));
-    res->pos = p; res->len = l; res->ind = i;
+    res->pos = p; res->len = l; res->ind = i;; res->is_mono = m;
     res->next = NULL; // 次项指针初始值为 NULL
     return res;
 }
@@ -104,23 +109,31 @@ PairsTab_record merge_PairsTab_record(PairsTab_record r) {
     int ind = r->ind;  // 合并的条件之一是 indel size 相等
     int len = SK;      // 合并最初的 MH length 为 SK
     long pos = r->pos; // 最初的 pos 为当前记录的位置
+    int is_mono = r->is_mono;
     PairsTab_record res;
     for ( r = r->next ; r && (r->pos > pos - 2 || r->pos == 0) ; r = r->next ) {
         if (r->pos == pos-1 && r->ind == ind) {
             pos--;
             len++;
+            is_mono = is_mono && r->is_mono; // 如果合并的相邻 pair 全都是单碱基重复的话 合并的 pair 一定也是
             r->pos = 0;
         }
     }
-    res = new_PairsTab_record(pos, len, ind);
+    res = new_PairsTab_record(pos, len, ind, is_mono);
     return res; // 如果没合并的话，返回的记录为原记录的 copy
 }
 void expand_PairsTab(PairsTab pt) {
     PairsTab res = new_PairsTab(); // 新建一个栈 res 用来转移结果
     PairsTab_record holder;
+    PairsTab_record merged;
     while (pt->rec) { // 从 pt 的第一项开始 直到最后一项
         if (pt->rec->pos) { // 如果当前记录没有被合并  以 pos == 0 标记
-            append_PairsTab(res, merge_PairsTab_record(pt->rec)); // 将合并好的记录插入 res
+            merged = merge_PairsTab_record(pt->rec);
+            if (merged->is_mono) {            // 如果是单碱基重复
+                free(merged);                 // 释放内存
+            } else {                          // 如果不是单碱基重复
+                append_PairsTab(res, merged); // 将合并好的记录插入 res
+            }
         }
         holder = pt->rec;
         pt->rec = pt->rec->next;
@@ -191,6 +204,7 @@ void add_KHash_PairsTab(KHash h, int v, long p, PairsTab pt) {
     //// 从第一个不可构成组合的 pos 开始全部删除
     KHash_value new, shift;
     PairsTab_record holder;
+    int is_mono;
 
     new = new_KHash_value(p); // 在表头插入新节点
     new->next = h->pos[v];
@@ -203,7 +217,12 @@ void add_KHash_PairsTab(KHash h, int v, long p, PairsTab pt) {
             shift->next = NULL;                          // 并重新标记表尾的 NULL 指针
         } else {
             if ( p - shift->next->pos >= MININTVL+SK ) { // 那么在没有超过范围且大于最小界限的情况下
-                append_PairsTab(pt, new_PairsTab_record(p, SK, p - shift->next->pos));
+                if (v == AAAA || v == CCCC || v == GGGG || v == TTTT) {
+                    is_mono = 1;
+                } else {
+                    is_mono = 0;
+                }
+                append_PairsTab(pt, new_PairsTab_record(p, SK, p - shift->next->pos, is_mono));
             }                                            // 向 PairsTab 添加新的记录
             shift = shift->next;                         // 向前移动 shift
         }
@@ -247,13 +266,14 @@ int main(int argc, char *argv[]) {
     int c, i, j, e;        // 寄存单个字符的 c 循环变量 i j e
     int ns = 0;            // 当前序列的个数
     long pos;              // 当前序列的位置
+    long skip;
     char sname[255];       // 序列的名字 Sequence NAME
     char fnout[255];       // 输出文件名 File Name OUT
     char fsuff[] = ".out"; // 输出文件名的后缀
     FILE * fout;           // 输出文件的指针
     Kmer k = new_Kmer();
     KHash h;
-    PairsTab pt; // 实现算法的主要数据结构
+    PairsTab pt;           // 实现算法的主要数据结构
 
     if (argc != 2) {
         printf("Usage: find_mh <output prefix>\n");
@@ -278,8 +298,8 @@ int main(int argc, char *argv[]) {
                         free_PairsTab(pt);          // 释放 PairsTab
                     }
                     if (c != EOF) {
-                        scanf("%s", sname);         // 读取新的序列名称
-                        for ( j = i ; sname[j-i] ; j++ ) {
+                        scanf("%[^\n]s", sname);         // 读取新的序列名称
+                        for ( j = i ; sname[j-i] != ' ' && sname[j-i] ; j++ ) {
                             fnout[j] = sname[j-i];
                         }
                         for ( e = j ; fsuff[e-j] ; e++ ) {
@@ -287,8 +307,9 @@ int main(int argc, char *argv[]) {
                         }
                         fnout[e] = '\0';            // 生成输出文件的文件名
                         fout = fopen(fnout, "w");
-                        pos = 1-SK;                 // 初始化 pos 为 1-SK
+                        pos = 1-SK;                 // 初始化 pos 为
                                                     // 这样当读完第一个 kmer 时 pos 为 1
+                        skip = 1-SK;
                         ns ++;                      // 记录过的序列数 + 1
                         h = new_KHash();
                         pt = new_PairsTab();
@@ -304,13 +325,16 @@ int main(int argc, char *argv[]) {
                     push_Kmer(k, 3); goto _base_;
                 _base_ :
                     pos++;                   // 并将 pos 增加一位 成为当前 kmer 左端的 pos
-                    if (pos > 0) {           // 当 pos > 0 时 说明已经读完了整个 SK 长的 kmer
+                    skip++;
+                    if (skip > 0) {          // 当 pos > 0 时 说明已经读完了整个 SK 长的 kmer
                         // print_Kmer(k, h);
                         add_KHash_PairsTab(h, hash_Kmer(k), pos, pt);
                         // print_Kmer(k, h);
                                              // 此时用计算出 kmer 的 hash 在哈希表 h 中添加 pos
                                              // 同时将满足条件的组合添加到 PairsTab pt
                     }
+                    break;
+                case 'N' : pos++; skip = 1-SK; break;
                 default : break;
             }
             if (c == EOF) {
