@@ -262,14 +262,13 @@ void print_PairsTab(PairsTab pt, FILE * f) {
 
 
 //// 主函数
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[]) {
     int c, i, j, e;        // 寄存单个字符的 c 循环变量 i j e
     int ns = 0;            // 当前序列的个数
     long pos;              // 当前序列的位置
     long skip;
     char sname[255];       // 序列的名字 Sequence NAME
-    char fnout[255];       // 输出文件名 File Name OUT
-    char fsuff[] = ".out"; // 输出文件名的后缀
+    char fnout[255];          // 输出文件名 File Name OUT
     FILE * fout;           // 输出文件的指针
     Kmer k = new_Kmer();
     KHash h;
@@ -279,11 +278,6 @@ int main(int argc, char *argv[]) {
         printf("Usage: find_mh <output prefix>\n");
         // 提示用法     find_mh 输出文件的前缀
     } else {
-        for ( i = 0 ; argv[1][i] ; i++ ) {
-            fnout[i] = argv[1][i]; // 复制输出文件的前缀
-        }
-        fnout[i] = '.';
-        i++;                       // 现在 i 所在的位置是 前缀. 紧接着之后的位置
         while (1) {
             c = getchar(); // 从标准输入抓取一个字符
             switch(c) {
@@ -298,19 +292,21 @@ int main(int argc, char *argv[]) {
                         free_PairsTab(pt);          // 释放 PairsTab
                     }
                     if (c != EOF) {
-                        scanf("%[^\n]s", sname);         // 读取新的序列名称
-                        for ( j = i ; sname[j-i] != ' ' && sname[j-i] ; j++ ) {
-                            fnout[j] = sname[j-i];
-                        }
-                        for ( e = j ; fsuff[e-j] ; e++ ) {
-                            fnout[e] = fsuff[e-j];
-                        }
-                        fnout[e] = '\0';            // 生成输出文件的文件名
-                        fout = fopen(fnout, "w");
+                        scanf("%[^\n]s", sname);    // 读取新的序列名称
+                        ns ++;                      // 记录过的序列数 + 1
+                        i = 0;
+                        while (sname[i]) {
+                            if (sname[i] == ' ' || sname[i] == '\t') {
+                                sname[i] = '\0';
+                                break;
+                            }
+                            i++;
+                        }                           // 在第一个分隔符的位置截断序列名称
+                        sprintf(fnout, "%s.%d.%s.out", argv[1], ns, sname);
+                        fout = fopen(fnout, "w");   // 打开输出文件
                         pos = 1-SK;                 // 初始化 pos 为
                                                     // 这样当读完第一个 kmer 时 pos 为 1
                         skip = 1-SK;
-                        ns ++;                      // 记录过的序列数 + 1
                         h = new_KHash();
                         pt = new_PairsTab();
                     }
