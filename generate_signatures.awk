@@ -87,9 +87,10 @@ NR != FNR {
 		# the output records are:
 		# sequence name | I/D clip sites 1 2 3 4 |
 		# WT signature 1 | WT signature 2 | I signature | D signature
+		# position indicator note:
 		#           1  2           3  4
 		#           |  |           |  |
-		#           v  v  D site   v  v I site
+		#    D site v  v I site    v  v
 		# CCTCAGCCAGccgtGTTATAACTTAccgtTTACCAACTACATTTTTTGTAACGAACCAAA
 		#           ^ I left clip  |  ^ I right clip
 		#              |           ^ D left clip
