@@ -84,7 +84,7 @@ NR != FNR {
 
 END {
 	OFS = "\t"
-	print "seqname", "h1s", "h1e", "h2s", "h2e", "dup", "col"
+	#OFMT = "%8.4f"
 	for (i = 1 ; i <= length(sign) ; i++) {
 		nm = sign[i]["nm"]
 		print nm, sign[i][1], sign[i][2], sign[i][3], sign[i][4], sign[i]["icount"]+0, sign[i]["dcount"]+0

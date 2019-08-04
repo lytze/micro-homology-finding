@@ -4,6 +4,7 @@
 
 //// 开始定义常数
 #define SK       4
+#define MK       12
 #define HSize    256 // 0000(4) ~ 3333(4)
 #define MAXINTVL 100 // 最大区间 100 bps
 #define MININTVL 3   // 最小区间 3 + SK bps
@@ -129,9 +130,10 @@ void expand_PairsTab(PairsTab pt) {
     while (pt->rec) { // 从 pt 的第一项开始 直到最后一项
         if (pt->rec->pos) { // 如果当前记录没有被合并  以 pos == 0 标记
             merged = merge_PairsTab_record(pt->rec);
-            if (merged->is_mono) {            // 如果是单碱基重复
+            if ((merged->is_mono) || (merged->len > MK) || (merged->ind - merged->len < MININTVL)) {
+               // 如果是单碱基重复  或者  MH序列过长        或者        间隔序列过短的话      
                 free(merged);                 // 释放内存
-            } else {                          // 如果不是单碱基重复
+            } else {
                 append_PairsTab(res, merged); // 将合并好的记录插入 res
             }
         }
