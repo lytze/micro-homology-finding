@@ -112,7 +112,7 @@ PairsTab_record merge_PairsTab_record(PairsTab_record r) {
     long pos = r->pos; // 最初的 pos 为当前记录的位置
     int is_mono = r->is_mono;
     PairsTab_record res;
-    for ( r = r->next ; r && (r->pos > pos - 2 || r->pos == 0) ; r = r->next ) {
+    for ( r = r->next ; r && (r->pos >= pos - 1 || r->pos == 0) && len < ind + SK - 1 ; r = r->next ) {
         if (r->pos == pos-1 && r->ind == ind) {
             pos--;
             len++;

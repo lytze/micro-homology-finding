@@ -1,4 +1,39 @@
-## 1. Find MH pairs across given sequence(s)
+## Run on Cluster
+
+Scripts for one-command (actually two-command) running on cluster is presented in the folder `run_on_cluster`.
+
+1. Up load `fastq` data and reference sequences `fasta`
+2. Make working directory and creating sub-directories
+
+```
+mkdir ref  # Here you put / link your reference sequences
+mkdir data # Here you put / link your fasta files
+mkdir probes
+mkdir mapped
+mkdir results
+```
+
+3. Do sequence alignment
+
+```
+for i in 1 2 3 4 ; do
+	alignForMTDCatching "lib"$i "ref/lib"$i".fa" "data/Library_"$i"_clean_R1.fastq.gz" "data/Library_"$i"_clean_R2.fastq.gz"
+done
+```
+
+Change `1 2 3 4` in above code to the identifier of your own file. Or run the command one-by-one
+
+4. Generate MTD pattern reference and catch MTD reads
+
+```
+for i in 1 2 3 4 ; do
+    countForSignatures "lib"$i "ref/lib"$i".fa" "mapped/lib"$i".sort.bam"
+done
+```
+
+## Separated Modules
+
+### 1. Find MH pairs across given sequence(s)
 
 #### Description
 
@@ -28,7 +63,7 @@ The program outputs file(s) with name `[output prefix].number.sequence_name.out`
 2. starting position of the second MH in a pair
 3. the size of the MH (k-mer's k)
 
-## 2. Generate signatures for MTD reads detection
+### 2. Generate signatures for MTD reads detection
 
 #### Description
 
@@ -49,3 +84,6 @@ Or directly call `gawk` for
 	gawk -f generate_signatures.awk <SZ=[feature size]> <TH=[feature diff threshold]> reference.fa mh.1.out <mh.2.out ...>
 
 
+.....
+
+still editing
