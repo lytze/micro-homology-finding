@@ -1,5 +1,5 @@
 ## prepare genome utils
-source("~/biotools/local-tools/R_utils/genome_utils_closure_lite.R")
+source("genome_util_lite.R")
 gu_sp <- initGenomeFromFasta("data/s_pombe.fa")
 #gu_sc <- initGenomeFromFasta("data/s_cerevisiae.fa")
 
